@@ -113,6 +113,10 @@ pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
                                       psiM, deltaM, t0, tf, XtPPsMCI), tspan, Rho0_LVLH, OptionsODE);
 close(pbar);
 
+% I need to integrate the computation of omegadot from the spline
+% interpolation.
+% Then I need to define q, then the dynamical model should be able to run.
+
 
 
 

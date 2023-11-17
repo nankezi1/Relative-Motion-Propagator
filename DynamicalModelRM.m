@@ -1,5 +1,5 @@
 function dRho_LVLH = DynamicalModelRM(t, Rho_LVLH, EarthPPsMCI, SunPPsMCI, muE, ...
-                     muS, MoonPPsECI, deltaE, psiM, deltaM, t0, tf, XtPPsMCI)
+                     muS, MoonPPsECI, deltaE, psiM, deltaM, t0, tf, XtPPsMCI, omegaPPsLVLH)
 % Description: this is the function with the Dynamical Model for the
 % Relavtive Motion.
 
@@ -49,8 +49,8 @@ apc_LVLH = a34Bc + aG_Mc;
 apt_MCI = R_MCI2LVLH'*apt_LVLH;
 apc_MCI = R_MCI2LVLH'*apc_LVLH;
 
-% Compute Angular Velocity of LVLH wrt MCI = omega_LVLH
-
+% Compute Angular Velocity of LVLH wrt MCI and its derivative
+omega_LVLH = ppsval(omegaPPsLVLH, t);
 
 
 
