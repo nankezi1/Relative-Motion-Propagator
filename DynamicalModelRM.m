@@ -1,7 +1,7 @@
 function dRho_LVLH = DynamicalModelRM(t, Rho_LVLH, EarthPPsMCI, SunPPsMCI, muE, ...
-                                  muS, MoonPPsECI, deltaE, psiM, ...
-                                  deltaM, t0, tf, XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs)
-
+                     muS, MoonPPsECI, deltaE, psiM, deltaM, t0, tf, XtPPsMCI)
+% Description: this is the function with the Dynamical Model for the
+% Relavtive Motion.
 
 % Retrieve Global Variables
 global muM Rm DU TU pbar
@@ -16,7 +16,6 @@ tMIN = floor(((t - t0) * TU - tDAY * Day - tHR * Hour) / Min);
 timeStr = sprintf('Time Elapsed: %02d days, %02d hrs, %02d mins', tDAY, tHR, tMIN);     % create a string for the time
 waitbarMessage = sprintf('Progress: %.2f%%\n%s', (t-t0)/(tf-t0)*100, timeStr);      % create the waitbar message including the time and progress percentage
 waitbar((t-t0)/(tf-t0), pbar, waitbarMessage);      % update the waitbar
-
 
 % Retrieve Rho State Variables
 rho_LVLH = Rho_LVLH(1:3);
@@ -46,36 +45,13 @@ aG_Mc = MoonHarmPerts(MEEc, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
 apc_LVLH = a34Bc + aG_Mc;
 
 % Convert Perturbating Accelerations into MCI
-a_t = COEt(1);
-e_t = COEt(2);
-incl_t = COEt(3);
-Omega_t = COEt(4);
-omega_t = COEt(5);
-nu_t = COEt(6);
-theta_tt = COEt(5) + COEt(6);
-
-R_MCI2LVLH = R3(theta_tt)*R1(incl_t)*R3(Omega_t);
+[R_MCI2LVLH, ~] = get_R_Rdot(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 apt_MCI = R_MCI2LVLH'*apt_LVLH;
 apc_MCI = R_MCI2LVLH'*apc_LVLH;
 
 % Compute Angular Velocity of LVLH wrt MCI = omega_LVLH
-rt_MCI = Xt_MCI(1:3);
-vt_MCI = Xt_MCI(4:6);
 
-pt = a_t*(1-e^2);
-rt = norm(rt_MCI);
-ht_vect = cross(rt_MCI, vt_MCI);
-ht = norm(ht_vect);
 
-incl_t_dot = rt*apt_LVLH(3)/ht * cos(theta_tt);
-Omega_t_dot = rt*apt_LVLH(3)/ht *sin(theta_tt)/sin(incl_t);
-omega_t_dot = -rt*apt_LVLH(3)*sin(theta_tt)*cos(incl_t)/(ht*sin(incl_t)) - apt_LVLH(1)/e_t*cos(nu_t)*sqrt(pt/muM) + apt_LVLH(2)*sqrt(pt/muM)*sin(nu_t)*(e_t*cos(nu_t)+2)/(e_t*(1+e_t*cos(nu_t)));
-nu_t_dot = sqrt(muM/pt^3)*(1+e_t*cos(nu_t))^2 + apt_LVLH(1)/e_t*cos(nu_t)*sqrt(pt/muM) - apt_LVLH(2)*sqrt(pt/muM)*sin(nu_t)*(e_t*cos(nu_t)+2)/e_t*(1+e_t*cos(nu_t));
-theta_tt_dot = omega_t_dot + nu_t_dot;
-
-omega_LVLH = [Omega_t_dot*sin(incl_t)*sin(theta_tt) + incl_t_dot*cos(theta_tt); ...
-              Omega_t_dot*sin(incl_t)*cos(theta_tt) - incl_t_dot*sin(theta_tt); ...
-              Omega_t_dot*cos(incl_t) + theta_tt_dot];
 
 
 % Assign State Derivatives

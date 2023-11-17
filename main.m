@@ -68,7 +68,7 @@ close(pbar);
 
 % Create Progress Bar for Chaser Propagation
 global pbar
-pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
+pbar = waitbar(0, 'Performing the Chaser Reference Trajectory Propagation');
 
 % Perform the Integration
 [~, MEEc] = ode113(@(t, MEE) DynamicalModelMEE(t, MEE, EarthPPsMCI, SunPPsMCI, ...
@@ -95,15 +95,26 @@ legend([T, C_MEE], {'Target Trajectory', 'Chaser Reference Trajectory'}, 'locati
 %% Propagate Chaser Trajectory using Relative Motion
 
 % Interpolate the Target Trajectory
-TargetPPsMCI = get_statePP(tspan, Xt_MCI);
+[XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH] = ...
+    TargetHandler(Xt_MCI, COEt, MEEt, tspan, EarthPPsMCI, SunPPsMCI, MoonPPsECI, deltaE, psiM, deltaM, muE, muS);
 
 % Convert initial conditions into LVLH
 Rho0_MCI = X0c_MCI - X0t_MCI;
 Rho0_LVLH = rhoMCI2LVLH(Rho0_MCI, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 
 
-%% Perform the Integration
+% Create Progress Bar for Chaser Propagation
+global pbar
+pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
 
-% [~, Rho_LVLH] = ode113(@(t, Rho_LVLH) DynamicalModelRM(t, Rho_LVLH, EarthPPsMCI, SunPPsMCI, ...
-%                                       muE, muS, time, MoonPPsECI, deltaE, ...
-%                                       psiM, deltaM, t0, tf, XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs), tspan, MEE0c, OptionsODE);
+% Perform the Integration
+[~, Rho_LVLH] = ode113(@(t, Rho_LVLH) DynamicalModelRM(t, Rho_LVLH, EarthPPsMCI, SunPPsMCI, ...
+                                      muE, muS, time, MoonPPsECI, deltaE, ...
+                                      psiM, deltaM, t0, tf, XtPPsMCI), tspan, Rho0_LVLH, OptionsODE);
+close(pbar);
+
+
+
+
+
+
