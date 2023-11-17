@@ -41,12 +41,22 @@ Nperiods = 2.2;         % to set the final time
  EphemerisHandler(deltaE, psiM, deltaM, Npoints, Nperiods);
 
 
-%% Propagate the Target Trajectory
+% Introduce the Chaser Trajectory
+Rho0_MCI = random_delta(-10, 10, -1e-3, 1e-3);          % km, km/s
+% rho0_MCI = [1 0 0 0 0 0]';        % km, km/s
+X0c_MCI = X0t_MCI + [Rho0_MCI(1:3)/DU; Rho0_MCI(4:6)/DU*TU];
+
+COE0c = rvPCI2COE(X0c_MCI', muM)';
+
+MEE0c = COE2MEE(COE0c')';
+
+
+%% Propagate the Target and Chaser Trajectory using MEE
 
 % Define the timespan for the propagation
 tspan = linspace(t0, tf, Npoints);
 
-% Create Progress Bar
+% Create Progress Bar for Target Propagation
 global pbar
 pbar = waitbar(0, 'Performing the Target Trajectory Propagation');
 
@@ -56,12 +66,44 @@ pbar = waitbar(0, 'Performing the Target Trajectory Propagation');
                                              psiM, deltaM, t0, tf), tspan, MEE0t, OptionsODE);
 close(pbar);
 
+% Create Progress Bar for Chaser Propagation
+global pbar
+pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
+
+% Perform the Integration
+[~, MEEc] = ode113(@(t, MEE) DynamicalModelMEE(t, MEE, EarthPPsMCI, SunPPsMCI, ...
+                                             muE, muS, time, MoonPPsECI, deltaE, ...
+                                             psiM, deltaM, t0, tf), tspan, MEE0c, OptionsODE);
+close(pbar);
+
 % Conversion from MEE to COE
-COE = MEE2COE(MEEt);
+COEt = MEE2COE(MEEt);
+COEc = MEE2COE(MEEc);
 
 % Conversion from COE to MCI
-Xt_MCI = COE2rvPCI(COE, muM);
+Xt_MCI = COE2rvPCI(COEt, muM);
+Xc_MCI = COE2rvPCI(COEc, muM);
 
-% Show the Target Trajectory in MCI
+
+% Show the Target and Chaser Trajectories in MCI
 figure('name', 'Trajectory in MCI Space')
-DrawTrajMCI3D(Xt_MCI(:, 1:3)*DU, '#d1d1d1', '-.');
+T = DrawTrajMCI3D(Xt_MCI(:, 1:3)*DU, '#d1d1d1', '-.');
+C_MEE = DrawTrajMCI3D(Xc_MCI(:, 1:3)*DU, '#61f4ff');
+legend([T, C_MEE], {'Target Trajectory', 'Chaser Reference Trajectory'}, 'location', 'best');
+
+
+%% Propagate Chaser Trajectory using Relative Motion
+
+% Interpolate the Target Trajectory
+TargetPPsMCI = get_statePP(tspan, Xt_MCI);
+
+% Convert initial conditions into LVLH
+Rho0_MCI = X0c_MCI - X0t_MCI;
+Rho0_LVLH = rhoMCI2LVLH(Rho0_MCI, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+
+
+%% Perform the Integration
+
+% [~, Rho_LVLH] = ode113(@(t, Rho_LVLH) DynamicalModelRM(t, Rho_LVLH, EarthPPsMCI, SunPPsMCI, ...
+%                                       muE, muS, time, MoonPPsECI, deltaE, ...
+%                                       psiM, deltaM, t0, tf, XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs), tspan, MEE0c, OptionsODE);

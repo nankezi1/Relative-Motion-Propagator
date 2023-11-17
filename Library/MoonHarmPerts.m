@@ -1,14 +1,13 @@
-function[aG] = MoonHarmPerts(MEE, MoonPPsECI, t, timespan, muM, deltaE, psiM, ...
+function[aG] = MoonHarmPerts(MEE, MoonPPsECI, t, muM, deltaE, psiM, ...
     deltaM)
 
 % Retrieve COE and MCI States
 COE = MEE2COE(MEE'); 
 X_MCI = COE2rvPCI(COE, muM)';
 
-% Find Moon State in ECI from Interpolation of Ephemeris - PolyEval()
-rM_ECI = [PolyEval(t, timespan, flip(MoonPPsECI(1).coefs, 2)); ...
-    PolyEval(t, timespan, flip(MoonPPsECI(2).coefs, 2)); ...
-    PolyEval(t, timespan, flip(MoonPPsECI(3).coefs, 2))];
+% Find Moon State in ECI from Interpolation of Ephemeris - ppsval()
+XM_ECI = ppsval(MoonPPsECI, t);
+rM_ECI = XM_ECI(1:3);
 
 % Compute Geographical Coordinates
 GeoElem = Cart2Geo(X_MCI);

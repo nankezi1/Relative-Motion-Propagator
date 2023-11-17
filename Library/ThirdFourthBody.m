@@ -1,4 +1,4 @@
-function a34B_LVLH = ThirdFourthBody(MEE, t, EarthPPsMCI, SunPPsMCI, muE, muS, time)
+function a34B_LVLH = ThirdFourthBody(MEE, t, EarthPPsMCI, SunPPsMCI, muE, muS)
 
 % Recall Global Variables
 global muM Rm TU DU
@@ -13,21 +13,12 @@ R3Omega = R3(COE(4));
 R1inc = R1(COE(3));
 R3theta = R3(COE(5) + COE(6));
 
-% % Find Planet States from Interpolation of Ephemeris - ppsval()
-% XE_MCI = ppsval(EarthPPsMCI, t);
-% rE_MCI = XE_MCI(1:3);
-% 
-% XS_MCI = ppsval(SunPPsMCI, t);
-% rS_MCI = XS_MCI(1:3);
+% Find Planet States from Interpolation of Ephemeris - ppsval()
+XE_MCI = ppsval(EarthPPsMCI, t);
+rE_MCI = XE_MCI(1:3);
 
-% Find Planet States from Interpolation of Ephemeris - PolyEval()
-rE_MCI = [PolyEval(t, time, flip(EarthPPsMCI(1).coefs, 2)); ...
-    PolyEval(t, time, flip(EarthPPsMCI(2).coefs, 2)); ...
-    PolyEval(t, time, flip(EarthPPsMCI(3).coefs, 2))];
-
-rS_MCI = [PolyEval(t, time, flip(SunPPsMCI(1).coefs, 2)); ...
-    PolyEval(t, time, flip(SunPPsMCI(2).coefs, 2)); ...
-    PolyEval(t, time, flip(SunPPsMCI(3).coefs, 2))];
+XS_MCI = ppsval(SunPPsMCI, t);
+rS_MCI = XS_MCI(1:3);
 
 % Evaluate III and IV Body Perturbing Accelerations
 qE = (norm(rSC_MCI)^2 - 2 * dot(rSC_MCI, rE_MCI)) / norm(rE_MCI)^2;

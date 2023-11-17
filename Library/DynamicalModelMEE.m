@@ -13,9 +13,9 @@ function dMEE = DynamicalModelMEE(t, MEE, EarthPPsMCI, SunPPsMCI, muE, ...
 % muS = Sun's gravitational parameter in canonical units
 % time = reduced time span
 % MoonPPsECI = pp struct with the interpolation of the Moon State in ECI
-% deltaE = 
-% PsiM = 
-% deltaM = 
+% deltaE = Earth's Ecliptic Obliquity
+% psiM = Moon's Precession Angle
+% deltaM = Moon's Equator Obliquity
 % t0 = initial time
 % 
 % Outputs:
@@ -59,10 +59,10 @@ G = get_G(MEE, muM, eta);
 % a34B = a3B_E + a3B_S;
 
 % Compute Third and Fourth Body Accelerations - ThirdFourthBody()
-a34B = ThirdFourthBody(MEE, t, EarthPPsMCI, SunPPsMCI, muE, muS, time);
+a34B = ThirdFourthBody(MEE, t, EarthPPsMCI, SunPPsMCI, muE, muS);
 
 % Compute Moon Harmonics Perturbation Acceleration
-aG_M = MoonHarmPerts(MEE, MoonPPsECI, t, time, muM, deltaE, psiM, deltaM);
+aG_M = MoonHarmPerts(MEE, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
 
 ap = a34B + aG_M;
 
