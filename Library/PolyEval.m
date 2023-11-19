@@ -1,7 +1,7 @@
 function [x, xdot, xddot] = PolyEval(t, timespan, matr)
 
 for index = 1 : length(timespan) - 1
-    if (t >= timespan(index)) & (t <= timespan(index+1))
+    if (t >= timespan(index)) && (t <= timespan(index+1))
         
         x = matr(index,1) + matr(index,2) * (t-timespan(index)) + ...
             matr(index,3) * (t-timespan(index))^2 + matr(index,4) * ...
