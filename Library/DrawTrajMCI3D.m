@@ -26,9 +26,9 @@ P = plot3(X,Y,Z,'Color',color, 'Linestyle', linestyle, 'LineWidth', 1.5);
 hold off
 grid on
 axis equal
-xlabel('x')
-ylabel('y')
-zlabel('z')
+xlabel('$x$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$y$', 'interpreter', 'latex', 'fontsize', 12)
+zlabel('$z$', 'interpreter', 'latex', 'fontsize', 12)
 view([30, 30])
 
 

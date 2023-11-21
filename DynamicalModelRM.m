@@ -1,10 +1,32 @@
 function dRHO_LVLH = DynamicalModelRM(t, RHO_LVLH, EarthPPsMCI, SunPPsMCI, muE, ...
-                     muS, tspan, MoonPPsECI, deltaE, psiM, deltaM, t0, tf, XtPPsMCI, omegaPPsLVLH)
+                                      muS, tspan, MoonPPsECI, deltaE, psiM, deltaM, ...
+                                      t0, tf, XtPPsMCI, omegaPPsLVLH)
+
 % Description: this is the function with the Dynamical Model for the
-% Relavtive Motion.
+% Relative Motion.
+% 
+% Inputs:
+% t = epoch
+% RHO_LVLH = [rho, rhodot] state in LVLH
+% EarthPPsMCI = pp struct with the interpolation of the Earth State in MCI
+% SunPPsMCI = pp struct with the interpolation of the Sun State in MCI
+% muE = Earth's gravitational parameter in canonical units
+% muS = Sun's gravitational parameter in canonical units
+% tspan = time span
+% MoonPPsECI = pp struct with the interpolation of the Moon State in ECI
+% deltaE = Earth's Ecliptic Obliquity
+% psiM = Moon's Precession Angle
+% deltaM = Moon's Equator Obliquity
+% t0 = initial time
+% tf = final time
+% XtPPsMCI = pp struct for the interpolation of target state in MCI
+% omegaPPsLVLH = pp struct for the interpolation of LVLH frame angular velocity
+% 
+% Outputs:
+% dRHO_LVLH = derivatives [rho, rhodot] state in LVLH
 
 % Retrieve Global Variables
-global muM Rm DU TU pbar
+global muM Rm DU TU pbar log
 
 % Initialize Derivatives Vector
 dRHO_LVLH = zeros(6, 1);
@@ -70,6 +92,17 @@ omegadot_LVLH = [omegadot_r, omegadot_t, omegadot_h]';
 dRHO_LVLH(1:3) = rhodot_LVLH;
 dRHO_LVLH(4:6) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + ...
             muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_MCI - muM/rc^3*rho_MCI + apc_MCI - apt_MCI;
+
+upd = dRHO_LVLH./RHO_LVLH;
+tol = 1;
+
+for i = 1 : length(upd)
+    if abs(upd(i)) > tol
+        fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
+        fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
+        break
+    end
+end
 
 end
 

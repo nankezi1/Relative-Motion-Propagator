@@ -7,17 +7,18 @@ clc
 addpath('Library/')
 addpath('Data/')
 addpath('Data/Planets/')
+addpath('Data/Materials/')
 
-skip = 0;
-
-if skip == 0
+skip = 1;
 
 %% Hyperparameters and Settings
+
+if skip == 0
 
 % Define options for ode113()
 OptionsODE = odeset('RelTol', 1e-7, 'AbsTol', 1e-6, 'MaxStep', Inf);
 
-savechoice = 1;     % set as 1 to save a copy of the plots locally
+savechoice = 0;     % set as 1 to save a copy of the plots locally
 
 % Define Global Variables
 global DU TU Rm muM
@@ -118,15 +119,16 @@ RHO0_LVLH = rhoMCI2LVLH(RHO0_MCI, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsEC
 
 
 % Create Progress Bar for Chaser Propagation
-global pbar
+global pbar log
 pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
+log = fopen('log.txt', 'w+');
 
 % Perform the Integration
 [~, RHO_LVLH] = ode113(@(t, RHO_LVLH) DynamicalModelRM(t, RHO_LVLH, EarthPPsMCI, SunPPsMCI, ...
                                       muE, muS, tspan, MoonPPsECI, deltaE, ...
                                       psiM, deltaM, t0, tf, XtPPsMCI, omegaPPsLVLH), tspan, RHO0_LVLH, OptionsODE);
 close(pbar);
-
+fclose(log);
 
 % Conversion of the Results
 Xc_MCI = zeros(size(RHO_LVLH, 1), 6);
@@ -154,7 +156,6 @@ RHOref_MCI = Xrefc_MCI - Xt_MCI;
 %% Visualization of the Results
 
 close all
-clc
 
 % Draw the Target, Chaser and Reference Chaser Trajectories in MCI
 figure('name', 'Trajectory in MCI Space')
@@ -183,8 +184,8 @@ hold on
 grid on
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 2)*DU)
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 3)*DU)
-xlabel('t [Days]')
-ylabel('[km]')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_r$', '$\delta_\theta$', '$\delta_h$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 
 subplot(2, 1, 2)
@@ -193,8 +194,8 @@ hold on
 grid on
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 5)*DU/TU)
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 6)*DU/TU)
-xlabel('t [Days]')
-ylabel('[km/s]')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_{\dot{r}}$', '$\delta_{\dot{\theta}}$', '$\delta_{\dot{h}}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 if savechoice
     saveas(gcf, strcat('Output/RHO State LVLH.jpg'))
@@ -209,8 +210,8 @@ hold on
 grid on
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 2) - Xrefc_MCI(:, 2)) * DU)
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 3) - Xrefc_MCI(:, 3)) * DU)
-xlabel('t [Days]')
-ylabel('[km]')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_x$', '$\delta_y$', '$\delta_z$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 
 subplot(2, 1, 2)
@@ -219,39 +220,38 @@ hold on
 grid on
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 5) - Xrefc_MCI(:, 5)) * DU/TU)
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 6) - Xrefc_MCI(:, 6)) * DU/TU)
-xlabel('t [Days]')
-ylabel('[km/s]')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 if savechoice
     saveas(gcf, strcat('Output/State MCI Error.jpg'))
 end
 
 
-% Visualize RHO_MCI wrt MCI State Error
-figure('name', 'RHO_MCI State wrt RHOref_MCI State')
-subplot(2, 1, 1)
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 1) - RHOref_MCI(:, 1))*DU)
-hold on
-grid on
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 2) - RHOref_MCI(:, 2))*DU)
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 3) - RHOref_MCI(:, 3))*DU)
-xlabel('t [Days]')
-ylabel('[km]')
-legend('$\delta_x$', '$\delta_y$', '$\delta_z$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
-
-subplot(2, 1, 2)
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 4) - RHOref_MCI(:, 4))*DU/TU)
-hold on
-grid on
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 5) - RHOref_MCI(:, 5))*DU/TU)
-plot((tspan - t0) * TU / Day, (RHO_MCI(:, 6) - RHOref_MCI(:, 6))*DU/TU)
-xlabel('t [Days]')
-ylabel('[km/s]')
-legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
-if savechoice
-    saveas(gcf, strcat('Output/RHO State MCI Error.jpg'))
-end
-
+% % Visualize RHO_MCI wrt MCI State Error
+% figure('name', 'RHO_MCI State wrt RHOref_MCI State')
+% subplot(2, 1, 1)
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 1) - RHOref_MCI(:, 1))*DU)
+% hold on
+% grid on
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 2) - RHOref_MCI(:, 2))*DU)
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 3) - RHOref_MCI(:, 3))*DU)
+% xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+% ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
+% legend('$\delta_x$', '$\delta_y$', '$\delta_z$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+% 
+% subplot(2, 1, 2)
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 4) - RHOref_MCI(:, 4))*DU/TU)
+% hold on
+% grid on
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 5) - RHOref_MCI(:, 5))*DU/TU)
+% plot((tspan - t0) * TU / Day, (RHO_MCI(:, 6) - RHOref_MCI(:, 6))*DU/TU)
+% xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+% ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
+% legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+% if savechoice
+%     saveas(gcf, strcat('Output/RHO State MCI Error.jpg'))
+% end
 
 
 % % Show the Evolution of omega_LVLH
@@ -268,3 +268,101 @@ end
 % xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
 % ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
 % legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+
+
+%% Testing - Dynamical Model
+clc
+M = size(Xt_MCI, 1);
+
+dRHO_LVLH = zeros(M, 6);
+
+pbar = waitbar(0, 'Testing the Propagation');
+for i = 1 : M
+
+    t = tspan(i);
+    
+    % Clock for the Integration
+    Day = 86400;  % seconds in a day
+    Hour = 3600;  % seconds in an hour
+    Min = 60;     % seconds in a minute
+    tDAY = floor((t - t0) * TU / Day);      % calculate the elapsed time components
+    tHR = floor(((t - t0) * TU - tDAY * Day) / Hour);
+    tMIN = floor(((t - t0) * TU - tDAY * Day - tHR * Hour) / Min);
+    timeStr = sprintf('Time Elapsed: %02d days, %02d hrs, %02d mins', tDAY, tHR, tMIN);     % create a string for the time
+    waitbarMessage = sprintf('Progress: %.2f%%\n%s', (t-t0)/(tf-t0)*100, timeStr);      % create the waitbar message including the time and progress percentage
+    waitbar((t-t0)/(tf-t0), pbar, waitbarMessage);      % update the waitbar
+    
+    % Retrieve RHO State Variables
+    rho_LVLH = RHO_LVLH(i, 1:3)';
+    rhodot_LVLH = RHO_LVLH(i, 4:6)';
+    
+    % Retrieve Target State in MCI
+    Xt_MCIi = ppsval(XtPPsMCI, t);
+    COEti = rvPCI2COE(Xt_MCIi', muM)';
+    MEEti = COE2MEE(COEti')';
+    rt_MCI = Xt_MCIi(1:3);
+    rt = norm(rt_MCI);
+    
+    % Convert RHO state into MCI
+    RHO_MCIi = rhoLVLH2MCI(RHO_LVLH(i, :)', Xt_MCIi, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+    rho_MCI = RHO_MCIi(1:3);
+    
+    % Compute Chaser State in MCI
+    Xc_MCIi = Xt_MCIi + RHO_MCIi;
+    COEci = rvPCI2COE(Xc_MCIi', muM)';
+    MEEci = COE2MEE(COEci')';
+    rc_MCI = Xc_MCIi(1:3);
+    rc = norm(rc_MCI);
+    
+    q = (dot(rho_MCI, rho_MCI) + 2*dot(rho_MCI, rt_MCI))/rt^2;
+    
+    % Target's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
+    a34Bt = ThirdFourthBody(MEEti, t, EarthPPsMCI, SunPPsMCI, muE, muS);
+    aG_Mt = MoonHarmPerts(MEEti, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
+    apt_LVLH = a34Bt + aG_Mt;
+    
+    % Chaser's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
+    a34Bc = ThirdFourthBody(MEEci, t, EarthPPsMCI, SunPPsMCI, muE, muS);
+    aG_Mc = MoonHarmPerts(MEEci, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
+    apc_LVLH = a34Bc + aG_Mc;
+    
+    % Convert Perturbating Accelerations into MCI
+    [R_MCI2LVLH, ~] = get_R_Rdot(Xt_MCIi, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+    apt_MCI = R_MCI2LVLH'*apt_LVLH;
+    apc_MCI = R_MCI2LVLH'*apc_LVLH;
+    
+    % Compute Angular Velocity of LVLH wrt MCI and its derivative
+    [omega_r, omegadot_r] = PolyEval(t, tspan, flip(omegaPPsLVLH(1).coefs, 2));
+    [omega_t, omegadot_t] = PolyEval(t, tspan, flip(omegaPPsLVLH(2).coefs, 2));
+    [omega_h, omegadot_h] = PolyEval(t, tspan, flip(omegaPPsLVLH(3).coefs, 2));
+    omega_LVLHi = [omega_r, omega_t, omega_h]';
+    omegadot_LVLH = [omegadot_r, omegadot_t, omegadot_h]';
+    
+    % Assign State Derivatives
+    dRHO_LVLH(i, 1:3) = rhodot_LVLH;
+    dRHO_LVLH(i, 4:6) = -2*cross(omega_LVLHi, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLHi, cross(omega_LVLHi, rho_LVLH)) + ...
+                muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_MCI - muM/rc^3*rho_MCI + apc_MCI - apt_MCI;
+
+end
+close(pbar)
+
+figure('name', 'Evolution of RHO State Derivatives')
+plot((tspan - t0) * TU / Day, dRHO_LVLH(:, 1:3)*DU)
+hold on
+plot((tspan - t0) * TU / Day, dRHO_LVLH(:, 4:6)*DU/TU)
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]\, , \,[km/s]$', 'interpreter', 'latex', 'fontsize', 12)
+legend('$\dot{r}$', '$\dot{\theta}$', '$\dot{h}$', '$\ddot{r}$', '$\ddot{\theta}$', '$\ddot{h}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+
+% %% Testing - Conversion
+% 
+% clc
+% 
+% RHO0_MCI = random_delta(-10, 10, -1, 1)
+% RHO0_LVLH = rhoMCI2LVLH(RHO0_MCI, X0t_MCI, tspan(1), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)
+% RHO1_MCI = rhoLVLH2MCI(RHO0_LVLH, X0t_MCI, tspan(1), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)
+% 
+% if norm(RHO1_MCI - RHO0_MCI) > 1e-14
+%     error('Big Norm')
+% end
+

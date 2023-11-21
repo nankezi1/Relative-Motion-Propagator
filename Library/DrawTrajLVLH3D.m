@@ -15,8 +15,8 @@ Z = rMatrixMCI(:, 3);
 
 [x,y,z]=sphere;
 
-rT = 1e-2;      % km
-I = imread('steel.jpg');
+rT = 1;      % km
+I = imread('titanium.jpg');
 surface(rT*x, rT*y, rT*z, flipud(I), 'FaceColor', 'texturemap', 'EdgeColor', 'none', 'CDataMapping', 'direct')
 
 hold on
