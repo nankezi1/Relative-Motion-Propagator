@@ -46,4 +46,11 @@ Rdot = R3dot(theta_t)*R1(incl)*R3(Omega)*theta_t_dot + ...
 
 % fprintf('The norm of R is: %.3f\nThe norm of Rdot is: %.3f\n\n', norm(R), norm(Rdot))
 
+
+R_dot = [sin(Omega)*sin(incl)*sin(theta_t)*incl_dot- cos(Omega)*sin(theta_t)*theta_t_dot - cos(Omega)*cos(incl)*sin(theta_t)*Omega_dot - sin(Omega)*cos(incl)*cos(theta_t)*theta_t_dot - sin(Omega)*cos(theta_t)*Omega_dot,   cos(Omega)*cos(theta_t)*Omega_dot - sin(Omega)*sin(theta_t)*theta_t_dot - sin(Omega)*cos(incl)*sin(theta_t)*Omega_dot + cos(Omega)*cos(incl)*cos(theta_t)*theta_t_dot - cos(Omega)*sin(incl)*sin(theta_t)*incl_dot, cos(incl)*sin(theta_t)*incl_dot + cos(theta_t)*sin(incl)*theta_t_dot
+         sin(Omega)*sin(theta_t)*Omega_dot - cos(Omega)*cos(theta_t)*theta_t_dot - cos(Omega)*cos(incl)*cos(theta_t)*Omega_dot + sin(Omega)*cos(theta_t)*sin(incl)*incl_dot + sin(Omega)*cos(incl)*sin(theta_t)*theta_t_dot, - cos(Omega)*sin(theta_t)*Omega_dot - sin(Omega)*cos(theta_t)*theta_t_dot - sin(Omega)*cos(incl)*cos(theta_t)*Omega_dot - cos(Omega)*cos(theta_t)*sin(incl)*incl_dot - cos(Omega)*cos(incl)*sin(theta_t)*theta_t_dot, cos(incl)*cos(theta_t)*incl_dot - sin(incl)*sin(theta_t)*theta_t_dot
+                                                                                                                                                                                      cos(Omega)*sin(incl)*Omega_dot + sin(Omega)*cos(incl)*incl_dot,                                                                                                                                                                                         sin(Omega)*sin(incl)*Omega_dot - cos(Omega)*cos(incl)*incl_dot, -sin(incl)*incl_dot];
+
+
+
 end

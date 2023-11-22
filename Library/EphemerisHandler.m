@@ -1,5 +1,5 @@
 function [X0_DSG, COE0, MEE0, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0,...
-          tf] = EphemerisHandler(deltaE, psiM, deltaM, Npoints, Nperiods)
+          tf, Npoints] = EphemerisHandler(deltaE, psiM, deltaM, Npoints, Nperiods)
 % Description: this function creates the necessary structures to continue
 % witht the trajectory propagation. In order to reduce computational
 % effort, it creates subvectors of Npoints from the original states and
@@ -42,6 +42,12 @@ stateDSG_ECI = stateDSG;
 stateMoon_ECI = stateMoon;
 stateSun_ECI = stateSun;
 stateEarth_ECI = zeros(length(time), 6);
+
+% Set upper limit to Npoints
+if Npoints > tf_idx
+    Npoints = tf_idx;
+    fprintf('Note: the n° of points for the interpolation exceeded the n° of total points, therefore it has been set as:\nNpoints = %.0f\n', Npoints);
+end
 
 % Create a Data Subset 
 indices = round(linspace(1, tf_idx, Npoints)');

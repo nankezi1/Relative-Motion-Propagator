@@ -9,16 +9,20 @@ addpath('Data/')
 addpath('Data/Planets/')
 addpath('Data/Materials/')
 
-skip = 1;
+% % To Do's
+% - fix the dynamical model
+% - understand yesterday's changes
+
+skip = 0;
 
 %% Hyperparameters and Settings
 
 if skip == 0
 
 % Define options for ode113()
-OptionsODE = odeset('RelTol', 1e-7, 'AbsTol', 1e-6, 'MaxStep', Inf);
+OptionsODE = odeset('RelTol', 1e-10, 'AbsTol', 1e-9, 'MaxStep', Inf);
 
-savechoice = 0;     % set as 1 to save a copy of the plots locally
+savechoice = 1;     % set as 1 to save a copy of the plots locally
 
 % Define Global Variables
 global DU TU Rm muM
@@ -38,18 +42,20 @@ Day = 86400;                                            % s
 
 
 % Define the n° of points for the Interpolation
-Npoints = 10000;
+Npoints = 100000;
 Nperiods = 1.2;         % to set the final time
-Nperiods = 0.5;
 
 % Interpolate the Ephemeris and Retrieve Target's Initial State
-[X0t_MCI, COE0t, MEE0t, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0, tf] = ...
+[X0t_MCI, COE0t, MEE0t, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0, tf, Npoints] = ...
  EphemerisHandler(deltaE, psiM, deltaM, Npoints, Nperiods);
 
 
-% Introduce the Chaser Trajectory
-% RHO0_MCI = random_delta(-10, 10, -1e-3, 1e-3);          % km, km/s
-RHO0_MCI = [1 0 0 0 0 0]';                              % km, km/s
+% Define the Chaser Initial Conditions
+RHO0_LVLH = [5e-2, 0, 0, 0, 0, 0]';      % km, km/s
+RHO0_LVLH = [RHO0_LVLH(1:3)/DU; RHO0_LVLH(4:6)/DU*TU];
+
+RHO0_MCI = rhoLVLH2MCI(RHO0_LVLH, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+
 X0c_MCI = X0t_MCI + [RHO0_MCI(1:3)/DU; RHO0_MCI(4:6)/DU*TU];
 
 COE0c = rvPCI2COE(X0c_MCI', muM)';
@@ -110,25 +116,29 @@ clc
 load('Data/WorkspaceMEE.mat');
 
 % Interpolate the Target Trajectory
-[XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH] = ...
+[XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH, omegadotPPsLVLH] = ...
     TargetHandler(Xt_MCI, COEt, MEEt, tspan, EarthPPsMCI, SunPPsMCI, MoonPPsECI, deltaE, psiM, deltaM, muE, muS);
-
-% Convert initial conditions into LVLH
-RHO0_MCI = X0c_MCI - X0t_MCI;
-RHO0_LVLH = rhoMCI2LVLH(RHO0_MCI, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-
 
 % Create Progress Bar for Chaser Propagation
 global pbar log
 pbar = waitbar(0, 'Performing the Chaser Trajectory Propagation');
 log = fopen('log.txt', 'w+');
 
+% Combine the Target and Chaser States into Y
+Y0 = [MEE0t; RHO0_LVLH];
+
 % Perform the Integration
-[~, RHO_LVLH] = ode113(@(t, RHO_LVLH) DynamicalModelRM(t, RHO_LVLH, EarthPPsMCI, SunPPsMCI, ...
-                                      muE, muS, tspan, MoonPPsECI, deltaE, ...
-                                      psiM, deltaM, t0, tf, XtPPsMCI, omegaPPsLVLH), tspan, RHO0_LVLH, OptionsODE);
+[~, Y] = ode113(@(t, Y) DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, ...
+                                         muE, muS, tspan, MoonPPsECI, deltaE, ...
+                                         psiM, deltaM, t0, tf, omegaPPsLVLH, omegadotPPsLVLH), tspan, Y0, OptionsODE);
 close(pbar);
 fclose(log);
+
+% Retrieve the Target and Chaser States
+MEEt = Y(:, 1:6);
+COEt = MEE2COE(MEEt);
+Xt_MCI1 = COE2rvPCI(COEt, muM);
+RHO_LVLH = Y(:, 7:12);
 
 % Conversion of the Results
 Xc_MCI = zeros(size(RHO_LVLH, 1), 6);
@@ -136,21 +146,21 @@ RHO_MCI = zeros(size(RHO_LVLH, 1), 6);
 omega_LVLH = zeros(size(RHO_LVLH, 1), 3);
 omegadot_LVLH = zeros(size(RHO_LVLH, 1), 3);
 
+pbar = waitbar(0, 'Performing the Final Post-Processing Steps');
 for i = 1 : size(RHO_LVLH, 1)
     
     RHO_MCI(i, :) = rhoLVLH2MCI(RHO_LVLH(i, :)', Xt_MCI(i, :)', tspan(i), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)';
     Xc_MCI(i, :) = Xt_MCI(i, :) + RHO_MCI(i, :);
 
     % Compute Angular Velocity of LVLH wrt MCI and its derivative
-    [omega_r, omegadot_r] = PolyEval(tspan(i), tspan, flip(omegaPPsLVLH(1).coefs, 2));
-    [omega_t, omegadot_t] = PolyEval(tspan(i), tspan, flip(omegaPPsLVLH(2).coefs, 2));
-    [omega_h, omegadot_h] = PolyEval(tspan(i), tspan, flip(omegaPPsLVLH(3).coefs, 2));
-    omega_LVLH(i, :) = [omega_r, omega_t, omega_h]';
-    omegadot_LVLH(i, :) = [omegadot_r, omegadot_t, omegadot_h]';
+    omega_LVLH(i, :) = ppsval(omegaPPsLVLH, tspan(i))';
+    omegadot_LVLH(i, :) = ppsval(omegadotPPsLVLH, tspan(i))';
+
+    waitbarMessage = sprintf('Final Post-Processing Progress: %.2f%%\n', i/length(tspan)*100);
+    waitbar(i/length(tspan), pbar, waitbarMessage);      % update the waitbar
 
 end
-
-RHOref_MCI = Xrefc_MCI - Xt_MCI;
+close(pbar)
 
 
 %% Visualization of the Results
@@ -164,7 +174,7 @@ Cref = DrawTrajMCI3D(Xrefc_MCI(:, 1:3)*DU, '#61f4ff');
 C = DrawTrajMCI3D(Xc_MCI(:, 1:3)*DU);
 legend([T, Cref, C], {'Target Trajectory', 'Chaser Reference Trajectory', 'Chaser Trajectory'}, 'location', 'best');
 if savechoice
-    saveas(gcf, strcat('Output/TrajectoriesMCI.jpg'))
+    saveas(gcf, strcat('Output/Trajectories MCI.jpg'))
 end
 
 
@@ -172,7 +182,7 @@ end
 figure('name', 'Chaser Trajectory in LVLH Space')
 C_LVLH = DrawTrajLVLH3D(RHO_LVLH(:, 1:3)*DU);
 if savechoice
-    saveas(gcf, strcat('Output/TrajectoryLVLH.jpg'))
+    saveas(gcf, strcat('Output/Trajectory LVLH.jpg'))
 end
 
 
@@ -186,7 +196,7 @@ plot((tspan - t0) * TU / Day, RHO_LVLH(:, 2)*DU)
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 3)*DU)
 xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
 ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
-legend('$\delta_r$', '$\delta_\theta$', '$\delta_h$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+legend('$r$', '$\theta$', '$h$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 
 subplot(2, 1, 2)
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 4)*DU/TU)
@@ -195,15 +205,15 @@ grid on
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 5)*DU/TU)
 plot((tspan - t0) * TU / Day, RHO_LVLH(:, 6)*DU/TU)
 xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
-ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
-legend('$\delta_{\dot{r}}$', '$\delta_{\dot{\theta}}$', '$\delta_{\dot{h}}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+ylabel('$[km/s]$', 'interpreter', 'latex', 'fontsize', 12)
+legend('$\dot{r}$', '$\dot{\theta}$', '$\dot{h}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 if savechoice
     saveas(gcf, strcat('Output/RHO State LVLH.jpg'))
 end
 
 
-% Visualize MCI State Error
-figure('name', 'Chaser MCI State Error wrt MEE Reference Propagation')
+% Visualize Chaser MCI State Error - Relative Motion vs MEE Propagation
+figure('name', 'Chaser MCI State Error - Relative Motion vs MEE Propagation')
 subplot(2, 1, 1)
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 1) - Xrefc_MCI(:, 1)) * DU)
 hold on
@@ -221,10 +231,32 @@ grid on
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 5) - Xrefc_MCI(:, 5)) * DU/TU)
 plot((tspan - t0) * TU / Day, (Xc_MCI(:, 6) - Xrefc_MCI(:, 6)) * DU/TU)
 xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
-ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km/s]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 if savechoice
-    saveas(gcf, strcat('Output/State MCI Error.jpg'))
+    saveas(gcf, strcat('Output/Chaser MCI State Error - RM vs MEE Propagations.jpg'))
+end
+
+
+% Visualize the Evolution of omega_LVLH
+figure('name', 'Evolution of omega_LVLH')
+plot((tspan - tspan(1))*TU/Day, omega_LVLH/TU)
+xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
+legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+if savechoice
+    saveas(gcf, strcat('Output/omega.jpg'))
+end
+
+
+% Visualize the Evolution of omegadot_LVLH
+figure('name', 'Evolution of omegadot_LVLH')
+plot((tspan - tspan(1))*TU/Day, omegadot_LVLH/TU^2)
+xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
+legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+if savechoice
+    saveas(gcf, strcat('Output/omegadot.jpg'))
 end
 
 
@@ -254,26 +286,15 @@ end
 % end
 
 
-% % Show the Evolution of omega_LVLH
-% figure('name', 'Evolution of omega_LVLH')
-% plot((tspan - tspan(1))*TU/Day, omega_LVLH/TU)
-% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
-% ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
-% legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+%% Testing
 
+testing = 0;
 
-% % Show the Evolution of omegadot_LVLH
-% figure('name', 'Evolution of omegadot_LVLH')
-% plot((tspan - tspan(1))*TU/Day, omegadot_LVLH/TU^2)
-% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
-% ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
-% legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+if testing
 
-
-%% Testing - Dynamical Model
+% Dynamical Model Tests
 clc
 M = size(Xt_MCI, 1);
-
 dRHO_LVLH = zeros(M, 6);
 
 pbar = waitbar(0, 'Testing the Propagation');
@@ -354,15 +375,4 @@ xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
 ylabel('$[km]\, , \,[km/s]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\dot{r}$', '$\dot{\theta}$', '$\dot{h}$', '$\ddot{r}$', '$\ddot{\theta}$', '$\ddot{h}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
 
-% %% Testing - Conversion
-% 
-% clc
-% 
-% RHO0_MCI = random_delta(-10, 10, -1, 1)
-% RHO0_LVLH = rhoMCI2LVLH(RHO0_MCI, X0t_MCI, tspan(1), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)
-% RHO1_MCI = rhoLVLH2MCI(RHO0_LVLH, X0t_MCI, tspan(1), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)
-% 
-% if norm(RHO1_MCI - RHO0_MCI) > 1e-14
-%     error('Big Norm')
-% end
-
+end

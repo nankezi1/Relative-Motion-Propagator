@@ -1,4 +1,4 @@
-function [XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tspan, ...
+function [XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tspan, ...
           EarthPPsMCI, SunPPsMCI, MoonPPsECI, deltaE, psiM, deltaM, muE, muS)
 
 
@@ -10,6 +10,8 @@ Day = 86400;    % s
 % Initialize Local Variables
 COEtdots = zeros(length(tspan), 6);
 omega_LVLH = zeros(length(tspan), 3);
+
+pbar = waitbar(0, 'Performing the Target Trajectory Interpolation');
 
 % Compute Local Variables
 for i = 1 : length(tspan)
@@ -35,6 +37,9 @@ for i = 1 : length(tspan)
                         Omega_dot*sin(incl)*cos(theta_t) - incl_dot*sin(theta_t); ...
                         Omega_dot*cos(incl) + theta_t_dot]';
 
+    waitbarMessage = sprintf('Target Interpolation Progress: %.2f%%\n', i/length(tspan)*100);
+    waitbar(i/length(tspan), pbar, waitbarMessage);      % update the waitbar
+
 end
 
 % % Check the Evolution of omega_LVLH
@@ -50,5 +55,12 @@ COEtPPs = get_statePP(tspan, COEt);
 MEEtPPs = get_statePP(tspan, MEEt);
 COEtdotsPPs = get_statePP(tspan, COEtdots);
 omegaPPsLVLH = get_statePP(tspan, omega_LVLH);
+
+omegadot_rPPs = fnder(omegaPPsLVLH(1), 1);
+omegadot_tPPs = fnder(omegaPPsLVLH(2), 1);
+omegadot_hPPs = fnder(omegaPPsLVLH(3), 1);
+omegadotPPsLVLH = [omegadot_rPPs; omegadot_tPPs; omegadot_hPPs];
+
+close(pbar);
 
 end

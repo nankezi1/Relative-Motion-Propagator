@@ -13,7 +13,7 @@ addpath('Data/Planets/')
 
 %% Parameters and Settings Definition
 
-% Define options for ode45()
+% Define options for ode113()
 OptionsODE = odeset('RelTol', 1e-7, 'AbsTol', 1e-6, 'MaxStep', Inf);
 
 savechoice = 0;     % set as 1 to save a copy of the plots locally
@@ -37,7 +37,7 @@ Day = 86400;                                            % s
 %% Ephemeris Interpolation
 
 % Define the n° of points for the Interpolation
-Npoints = 10000;
+Npoints = 100000;
 
 % Handle the Interpolation and Retrieve IC as MEE0
 [MEE0, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0, tf] = ...

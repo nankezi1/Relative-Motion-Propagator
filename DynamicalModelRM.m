@@ -1,6 +1,6 @@
-function dRHO_LVLH = DynamicalModelRM(t, RHO_LVLH, EarthPPsMCI, SunPPsMCI, muE, ...
+function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, ...
                                       muS, tspan, MoonPPsECI, deltaE, psiM, deltaM, ...
-                                      t0, tf, XtPPsMCI, omegaPPsLVLH)
+                                      t0, tf, omegaPPsLVLH, omegadotPPsLVLH)
 
 % Description: this is the function with the Dynamical Model for the
 % Relative Motion.
@@ -28,8 +28,12 @@ function dRHO_LVLH = DynamicalModelRM(t, RHO_LVLH, EarthPPsMCI, SunPPsMCI, muE, 
 % Retrieve Global Variables
 global muM Rm DU TU pbar log
 
+% Retrieve Data from Input
+MEEt = Y(1:6);
+RHO_LVLH = Y(7:12);
+
 % Initialize Derivatives Vector
-dRHO_LVLH = zeros(6, 1);
+dY = zeros(12, 1);
 
 % Clock for the Integration
 Day = 86400;  % seconds in a day
@@ -47,9 +51,8 @@ rho_LVLH = RHO_LVLH(1:3);
 rhodot_LVLH = RHO_LVLH(4:6);
 
 % Retrieve Target State in MCI
-Xt_MCI = ppsval(XtPPsMCI, t);
-COEt = rvPCI2COE(Xt_MCI', muM)';
-MEEt = COE2MEE(COEt')';
+COEt = MEE2COE(MEEt')';
+Xt_MCI = COE2rvPCI(COEt', muM)';
 rt_MCI = Xt_MCI(1:3);
 rt = norm(rt_MCI);
 
@@ -77,32 +80,42 @@ aG_Mc = MoonHarmPerts(MEEc, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
 apc_LVLH = a34Bc + aG_Mc;
 
 % Convert Perturbating Accelerations into MCI
-[R_MCI2LVLH, ~] = get_R_Rdot(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-apt_MCI = R_MCI2LVLH'*apt_LVLH;
-apc_MCI = R_MCI2LVLH'*apc_LVLH;
+[R_MCI2LVLHt, ~] = get_R_Rdot(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+[R_MCI2LVLHc, ~] = get_R_Rdot(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+apt_MCI = R_MCI2LVLHt'*apt_LVLH;
+apc_MCI = R_MCI2LVLHc'*apc_LVLH;
 
 % Compute Angular Velocity of LVLH wrt MCI and its derivative
-[omega_r, omegadot_r] = PolyEval(t, tspan, flip(omegaPPsLVLH(1).coefs, 2));
-[omega_t, omegadot_t] = PolyEval(t, tspan, flip(omegaPPsLVLH(2).coefs, 2));
-[omega_h, omegadot_h] = PolyEval(t, tspan, flip(omegaPPsLVLH(3).coefs, 2));
-omega_LVLH = [omega_r, omega_t, omega_h]';
-omegadot_LVLH = [omegadot_r, omegadot_t, omegadot_h]';
+omega_LVLH = ppsval(omegaPPsLVLH, t);
+omegadot_LVLH = ppsval(omegadotPPsLVLH, t);
+
+% Rotations
+rt_LVLH = R_MCI2LVLHt * rt_MCI;
+apc_LVLHt = R_MCI2LVLHt * apc_MCI;
+
+% MEE Propagation Quantities
+eta = get_eta(MEEt);
+G = get_G(MEEt, muM, eta);
+
 
 % Assign State Derivatives
-dRHO_LVLH(1:3) = rhodot_LVLH;
-dRHO_LVLH(4:6) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + ...
-            muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_MCI - muM/rc^3*rho_MCI + apc_MCI - apt_MCI;
+dY(1:6) = G*apt_LVLH;
+dY(6) = dY(6) + sqrt(muM/MEEt(1)^3)*eta^2;
+dY(7:9) = rhodot_LVLH;
+dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + ...
+            muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLH;
 
-upd = dRHO_LVLH./RHO_LVLH;
-tol = 1;
-
-for i = 1 : length(upd)
-    if abs(upd(i)) > tol
-        fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
-        fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
-        break
-    end
-end
+% % Create log file
+% upd = dY./RHO_LVLH;
+% tol = 1;
+% 
+% for i = 1 : length(upd)
+%     if abs(upd(i)) > tol
+%         fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
+%         fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
+%         break
+%     end
+% end
 
 end
 
