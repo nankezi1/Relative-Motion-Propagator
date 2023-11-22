@@ -7,7 +7,9 @@ function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, ...
 % 
 % Inputs:
 % t = epoch
-% RHO_LVLH = [rho, rhodot] state in LVLH
+% Y = [MEEt; RHO_LVLH] expanded state which contains the following
+%   - MEEt = Modified Equinoctial Elements of Target
+%   - RHO_LVLH = [rho, rhodot] state in LVLH
 % EarthPPsMCI = pp struct with the interpolation of the Earth State in MCI
 % SunPPsMCI = pp struct with the interpolation of the Sun State in MCI
 % muE = Earth's gravitational parameter in canonical units
@@ -24,6 +26,11 @@ function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, ...
 % 
 % Outputs:
 % dRHO_LVLH = derivatives [rho, rhodot] state in LVLH
+% 
+% 
+% Note:
+% In the Dynamical Model equations we need all vectors represented in the
+% target centered LVLH reference frame.
 
 % Retrieve Global Variables
 global muM Rm DU TU pbar log
@@ -54,7 +61,6 @@ rhodot_LVLH = RHO_LVLH(4:6);
 COEt = MEE2COE(MEEt')';
 Xt_MCI = COE2rvPCI(COEt', muM)';
 rt_MCI = Xt_MCI(1:3);
-rt = norm(rt_MCI);
 
 % Convert RHO state into MCI
 RHO_MCI = rhoLVLH2MCI(RHO_LVLH, Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
@@ -65,9 +71,6 @@ Xc_MCI = Xt_MCI + RHO_MCI;
 COEc = rvPCI2COE(Xc_MCI', muM)';
 MEEc = COE2MEE(COEc')';
 rc_MCI = Xc_MCI(1:3);
-rc = norm(rc_MCI);
-
-q = (dot(rho_MCI, rho_MCI) + 2*dot(rho_MCI, rt_MCI))/rt^2;
 
 % Target's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
 a34Bt = ThirdFourthBody(MEEt, t, EarthPPsMCI, SunPPsMCI, muE, muS);
@@ -77,45 +80,49 @@ apt_LVLH = a34Bt + aG_Mt;
 % Chaser's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
 a34Bc = ThirdFourthBody(MEEc, t, EarthPPsMCI, SunPPsMCI, muE, muS);
 aG_Mc = MoonHarmPerts(MEEc, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
-apc_LVLH = a34Bc + aG_Mc;
+apc_LVLHc = a34Bc + aG_Mc;
 
 % Convert Perturbating Accelerations into MCI
 [R_MCI2LVLHt, ~] = get_R_Rdot(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 [R_MCI2LVLHc, ~] = get_R_Rdot(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-apt_MCI = R_MCI2LVLHt'*apt_LVLH;
-apc_MCI = R_MCI2LVLHc'*apc_LVLH;
+
+apc_MCI = R_MCI2LVLHc'*apc_LVLHc;
 
 % Compute Angular Velocity of LVLH wrt MCI and its derivative
 omega_LVLH = ppsval(omegaPPsLVLH, t);
 omegadot_LVLH = ppsval(omegadotPPsLVLH, t);
 
-% Rotations
-rt_LVLH = R_MCI2LVLHt * rt_MCI;
+% Rotate the Necessary Vectors
+rt_LVLH = R_MCI2LVLHt * rt_MCI;     % this is -r_t2M^(LVLH)
 apc_LVLHt = R_MCI2LVLHt * apc_MCI;
 
 % MEE Propagation Quantities
 eta = get_eta(MEEt);
 G = get_G(MEEt, muM, eta);
 
+% RM Propagation Quantities
+rt = norm(rt_LVLH);
+rc = norm(rc_MCI);
+q = (dot(rho_LVLH, rho_LVLH) + 2*dot(rho_LVLH, rt_LVLH))/rt^2;
+
 
 % Assign State Derivatives
 dY(1:6) = G*apt_LVLH;
 dY(6) = dY(6) + sqrt(muM/MEEt(1)^3)*eta^2;
 dY(7:9) = rhodot_LVLH;
-dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + ...
-            muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLH;
+dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLH;
 
-% % Create log file
-% upd = dY./RHO_LVLH;
-% tol = 1;
-% 
-% for i = 1 : length(upd)
-%     if abs(upd(i)) > tol
-%         fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
-%         fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
-%         break
-%     end
-% end
+% Create log file
+upd = dY./Y;
+tol = 1;
+
+for i = 1 : length(upd)
+    if abs(upd(i)) > tol
+        fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
+        fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
+        break
+    end
+end
 
 end
 

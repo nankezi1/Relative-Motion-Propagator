@@ -42,13 +42,6 @@ for i = 1 : length(tspan)
 
 end
 
-% % Check the Evolution of omega_LVLH
-% figure('name', 'Evolution of omega_LVLH')
-% plot((tspan - tspan(1))*TU/Day, omega_LVLH)
-% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
-% ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
-% legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
-
 % Perform the Interpolation
 XtPPsMCI = get_statePP(tspan, Xt_MCI);
 COEtPPs = get_statePP(tspan, COEt);
