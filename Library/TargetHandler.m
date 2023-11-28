@@ -1,4 +1,4 @@
-function [XtPPsMCI, COEtPPs, MEEtPPs, COEtdotsPPs, omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tspan, ...
+function [omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tspan, ...
           EarthPPsMCI, SunPPsMCI, MoonPPsECI, deltaE, psiM, deltaM, muE, muS)
 
 
@@ -8,12 +8,11 @@ global DU TU muM Rm
 Day = 86400;    % s
 
 % Initialize Local Variables
-COEtdots = zeros(length(tspan), 6);
 omega_LVLH = zeros(length(tspan), 3);
 
+% Compute Local Variables
 pbar = waitbar(0, 'Performing the Target Trajectory Interpolation');
 
-% Compute Local Variables
 for i = 1 : length(tspan)
 
     ti = tspan(i);      % get current epoch
@@ -28,8 +27,8 @@ for i = 1 : length(tspan)
     theta_t = omega + nu;
 
     % Compute COE Derivatives
-    COEtdots(i, :) = get_COEdots(COEt(i, :), Xt_MCI(i, :), ap_LVLH);
-    [~, ~, incl_dot, Omega_dot, omega_dot, nu_dot] = S2C(COEtdots(i, :));
+    COEtdots = get_COEdots(COEt(i, :), Xt_MCI(i, :), ap_LVLH);
+    [~, ~, incl_dot, Omega_dot, omega_dot, nu_dot] = S2C(COEtdots);
     theta_t_dot = omega_dot + nu_dot;
 
     % Compute LVLH Angular Velocity wrt MCI
@@ -43,10 +42,6 @@ for i = 1 : length(tspan)
 end
 
 % Perform the Interpolation
-XtPPsMCI = get_statePP(tspan, Xt_MCI);
-COEtPPs = get_statePP(tspan, COEt);
-MEEtPPs = get_statePP(tspan, MEEt);
-COEtdotsPPs = get_statePP(tspan, COEtdots);
 omegaPPsLVLH = get_statePP(tspan, omega_LVLH);
 
 omegadot_rPPs = fnder(omegaPPsLVLH(1), 1);

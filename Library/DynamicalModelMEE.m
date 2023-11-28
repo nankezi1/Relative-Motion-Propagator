@@ -1,6 +1,5 @@
 function dMEE = DynamicalModelMEE(t, MEE, EarthPPsMCI, SunPPsMCI, muE, ...
-                                  muS, time, MoonPPsECI, deltaE, psiM, ...
-                                  deltaM, t0, tf)
+                                  muS, MoonPPsECI, deltaE, psiM, deltaM, t0, tf)
 
 % Description: this function contains the Dynamical Model for the
 % integration of the Modified Equinoctial Elements.

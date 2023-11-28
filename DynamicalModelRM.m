@@ -1,6 +1,5 @@
-function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, ...
-                                      muS, tspan, MoonPPsECI, deltaE, psiM, deltaM, ...
-                                      t0, tf, omegaPPsLVLH, omegadotPPsLVLH)
+function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, muS, MoonPPsECI, ...
+                               deltaE, psiM, deltaM, t0, tf, omegaPPsLVLH, omegadotPPsLVLH)
 
 % Description: this is the function with the Dynamical Model for the
 % Relative Motion.
@@ -64,7 +63,6 @@ rt_MCI = Xt_MCI(1:3);
 
 % Convert RHO state into MCI
 RHO_MCI = rhoLVLH2MCI(RHO_LVLH, Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-rho_MCI = RHO_MCI(1:3);
 
 % Compute Chaser State in MCI
 Xc_MCI = Xt_MCI + RHO_MCI;
