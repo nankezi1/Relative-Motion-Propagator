@@ -18,7 +18,7 @@ addpath('Data/Materials/')
 % Define options for ode113()
 OptionsODE = odeset('RelTol', 1e-7, 'AbsTol', 1e-6, 'MaxStep', Inf);
 
-savechoice = 1;     % set as 1 to save a copy of the plots locally
+savechoice = 0;     % set as 1 to save a copy of the plots locally
 
 % Define Global Variables
 global DU TU Rm muM pbar log
@@ -38,7 +38,7 @@ Day = 86400;                                            % s
 
 
 % Define the n° of points for the Interpolation
-Npoints = 1000;
+Npoints = 10000;
 Nperiods = 1.2;         % to set the final time
 
 % Interpolate the Ephemeris and Retrieve Target's Initial State
@@ -52,7 +52,7 @@ RHO0_LVLH = [RHO0_LVLH(1:3)/DU; RHO0_LVLH(4:6)/DU*TU];
 
 RHO0_MCI = rhoLVLH2MCI(RHO0_LVLH, X0t_MCI, t0, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 
-X0c_MCI = X0t_MCI + [RHO0_MCI(1:3)/DU; RHO0_MCI(4:6)/DU*TU];
+X0c_MCI = X0t_MCI + RHO0_MCI;
 
 COE0c = rvPCI2COE(X0c_MCI', muM)';
 
