@@ -32,7 +32,7 @@ function dY = DynamicalModelRM(t, Y, EarthPPsMCI, SunPPsMCI, muE, muS, MoonPPsEC
 % target centered LVLH reference frame.
 
 % Retrieve Global Variables
-global muM Rm DU TU pbar log
+global muM TU pbar log
 
 % Retrieve Data from Input
 MEEt = Y(1:6);
@@ -82,9 +82,9 @@ apc_LVLHc = a34Bc + aG_Mc;
 
 % Convert Perturbating Accelerations into MCI
 [R_MCI2LVLHt, ~] = get_rotMCI2LVLH(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-[R_MCI2LVLHc, ~] = get_rotMCI2LVLH(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+[R_LVLHc2MCI, ~] = get_rotLVLH2MCI(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 
-apc_MCI = R_MCI2LVLHc'*apc_LVLHc;
+apc_MCI = R_LVLHc2MCI*apc_LVLHc;
 
 % Compute Angular Velocity of LVLH wrt MCI and its derivative
 omega_LVLH = ppsval(omegaPPsLVLH, t);

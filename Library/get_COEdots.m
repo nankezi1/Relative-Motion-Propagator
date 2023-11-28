@@ -34,6 +34,7 @@ ap_h = ap_LVLH(3);
 
 % Compute COEdots - Pontani's Notes
 a_dot = 2*a^2/h*(e*sin(nu)*ap_r + p/r*ap_t);
+a_dot = 2*a^2/h*(e*sin(nu)*ap_r + ap_t*(1+e*cos(nu)));
 e_dot = sqrt(p/muM)*ap_r*sin(nu) + sqrt(p/muM)*ap_t*(e + e*cos(nu)^2 + 2*cos(nu))/(1 + e*cos(nu));
 incl_dot = r*ap_h*cos(theta_t)/h;
 Omega_dot = r*ap_h*sin(theta_t)/(h*sin(incl));

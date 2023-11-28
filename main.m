@@ -18,7 +18,7 @@ addpath('Data/Materials/')
 % Define options for ode113()
 OptionsODE = odeset('RelTol', 1e-7, 'AbsTol', 1e-6, 'MaxStep', Inf);
 
-savechoice = 0;     % set as 1 to save a copy of the plots locally
+savechoice = 1;     % set as 1 to save a copy of the plots locally
 
 % Define Global Variables
 global DU TU Rm muM pbar log
@@ -40,6 +40,7 @@ Day = 86400;                                            % s
 % Define the n° of points for the Interpolation
 Npoints = 1000;
 Nperiods = 1.2;         % to set the final time
+% Nperiods = 6;
 
 % Interpolate the Ephemeris and Retrieve Target's Initial State
 [X0t_MCI, COE0t, MEE0t, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0, tf, Npoints] = ...
@@ -78,8 +79,8 @@ pbar = waitbar(0, 'Performing the Chaser Reference Trajectory Propagation');
 
 % Perform the Integration
 [~, MEErefc] = ode113(@(t, MEE) DynamicalModelMEE(t, MEE, EarthPPsMCI, SunPPsMCI, ...
-                                               muE, muS, MoonPPsECI, deltaE, psiM, deltaM, ...
-                                               t0, tf), tspan, MEE0c, OptionsODE);
+                                                  muE, muS, MoonPPsECI, deltaE, psiM, deltaM, ...
+                                                  t0, tf), tspan, MEE0c, OptionsODE);
 close(pbar);
 
 % Conversion from MEE to COE
@@ -90,8 +91,8 @@ COErefc = MEE2COE(MEErefc);
 Xt_MCI = COE2rvPCI(COEt, muM);
 Xrefc_MCI = COE2rvPCI(COErefc, muM);
 
+% Compute the RHO State as Reference
 RHOref_MCI = Xrefc_MCI - Xt_MCI;
-
 
 % % Show the Target and Chaser Trajectories in MCI
 % figure('name', 'Trajectory in MCI Space')
@@ -100,18 +101,54 @@ RHOref_MCI = Xrefc_MCI - Xt_MCI;
 % legend([T, Cref], {'Target Trajectory', 'Chaser Reference Trajectory'}, 'location', 'best');
 % view([140, 30]);
 
-% save('Data/WorkspaceMEE.mat');
 
+%% Check get_COEdots()
+
+testcoe = 0;
+
+if testcoe
+
+pbar = waitbar(0, 'Test on COEdots');
+[~, COEtest] = ode113(@(t, COE) DynamicalModelCOE(t, COE, EarthPPsMCI, SunPPsMCI, ...
+                                                  muE, muS, MoonPPsECI, deltaE, psiM, deltaM, ...
+                                                  t0, tf), tspan, COE0t, OptionsODE);
+close(pbar);
+Xtest_MCI = COE2rvPCI(COEtest, muM);
+
+% Visualize Chaser MCI State Error - Relative Motion vs MEE Propagation
+figure('name', 'Test of COEdots')
+subplot(2, 1, 1)
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 1) - Xt_MCI(:, 1)) * DU)
+hold on
+grid on
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 2) - Xt_MCI(:, 2)) * DU)
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 3) - Xt_MCI(:, 3)) * DU)
+% title('Chaser MCI Position Error')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
+legend('$\delta_x$', '$\delta_y$', '$\delta_z$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+
+subplot(2, 1, 2)
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 4) - Xt_MCI(:, 4)) * DU/TU)
+hold on
+grid on
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 5) - Xt_MCI(:, 5)) * DU/TU)
+plot((tspan - t0) * TU / Day, (Xtest_MCI(:, 6) - Xt_MCI(:, 6)) * DU/TU)
+% title('Chaser MCI Velocity Error')
+xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
+ylabel('$[km/s]$', 'interpreter', 'latex', 'fontsize', 12)
+legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+if savechoice
+    saveas(gcf, strcat('Output/testCOEdots.jpg'))
+end
+
+return
+
+end
 
 %% Propagate Chaser Trajectory using Relative Motion
 
-% close all
-% clear
-% clc
-% 
-% load('Data/WorkspaceMEE.mat');
-
-% Interpolate the Target Trajectory
+% Interpolate the Angular Velocity of LVLH wrt MCI
 [omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tspan, EarthPPsMCI, ...
                                                 SunPPsMCI, MoonPPsECI, deltaE, psiM, deltaM, muE, muS);
 
@@ -244,30 +281,6 @@ if savechoice
 end
 
 
-% Visualize the Evolution of omega_LVLH
-figure('name', 'Evolution of omega_LVLH')
-plot((tspan - tspan(1))*TU/Day, omega_LVLH/TU)
-title('Evolution of omega^{(LVLH)}')
-xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
-ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
-legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
-if savechoice
-    saveas(gcf, strcat('Output/omega.jpg'))
-end
-
-
-% Visualize the Evolution of omegadot_LVLH
-figure('name', 'Evolution of omegadot_LVLH')
-plot((tspan - tspan(1))*TU/Day, omegadot_LVLH/TU^2)
-title('Evolution of omegadot^{(LVLH)}')
-xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
-ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
-legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
-if savechoice
-    saveas(gcf, strcat('Output/omegadot.jpg'))
-end
-
-
 % Visualize RHO_MCI wrt reference RHO_MCI
 figure('name', 'RHO_MCI State wrt RHOref_MCI State')
 subplot(2, 1, 1)
@@ -296,11 +309,35 @@ if savechoice
 end
 
 
+% % Visualize the Evolution of omega_LVLH
+% figure('name', 'Evolution of omega_LVLH')
+% plot((tspan - tspan(1))*TU/Day, omega_LVLH/TU)
+% title('Evolution of omega^{(LVLH)}')
+% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+% ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
+% legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+% if savechoice
+%     saveas(gcf, strcat('Output/omega.jpg'))
+% end
+% 
+% 
+% % Visualize the Evolution of omegadot_LVLH
+% figure('name', 'Evolution of omegadot_LVLH')
+% plot((tspan - tspan(1))*TU/Day, omegadot_LVLH/TU^2)
+% title('Evolution of omegadot^{(LVLH)}')
+% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+% ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
+% legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
+% if savechoice
+%     saveas(gcf, strcat('Output/omegadot.jpg'))
+% end
+
+
 %% Testing
 
 load('Data/WorkspaceRM.mat');
 
-testing = 1;
+testing = 0;
 
 if testing
 

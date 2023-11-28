@@ -5,8 +5,6 @@ function [omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tsp
 % Recall Global Variables
 global DU TU muM Rm
 
-Day = 86400;    % s
-
 % Initialize Local Variables
 omega_LVLH = zeros(length(tspan), 3);
 

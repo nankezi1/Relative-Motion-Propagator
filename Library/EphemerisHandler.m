@@ -30,7 +30,7 @@ load('Ephemeris.mat', 'stateDSG', 'stateMoon', 'stateSun', 'time');
 global DU TU muM Rm
 
 % Define DSG Orbital Period
-T_DSG = 6.4;       % days
+T_DSG = 6.4;        % days
 Day = 86400;        % s
 
 % Find the Index of tf
