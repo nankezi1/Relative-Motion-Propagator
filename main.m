@@ -247,7 +247,7 @@ end
 % Visualize the Evolution of omega_LVLH
 figure('name', 'Evolution of omega_LVLH')
 plot((tspan - tspan(1))*TU/Day, omega_LVLH/TU)
-title('Evolution of omega_LVLH')
+title('Evolution of omega^{(LVLH)}')
 xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
 ylabel('$\omega^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
 legend('$\omega_{r}$', '$\omega_{\theta}$', '$\omega_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
@@ -259,7 +259,7 @@ end
 % Visualize the Evolution of omegadot_LVLH
 figure('name', 'Evolution of omegadot_LVLH')
 plot((tspan - tspan(1))*TU/Day, omegadot_LVLH/TU^2)
-title('Evolution of omegadot_LVLH')
+title('Evolution of omegadot^{(LVLH)}')
 xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
 ylabel('$\dot{\omega}^{(LVLH)} \ [rad/s^2]$', 'Interpreter','latex', 'FontSize', 12)
 legend('$\dot{\omega}_{r}$', '$\dot{\omega}_{\theta}$', '$\dot{\omega}_{h}$', 'location', 'best', 'interpreter', 'latex', 'fontsize', 12)
@@ -279,6 +279,7 @@ plot((tspan - t0) * TU / Day, (RHO_MCI(:, 3) - RHOref_MCI(:, 3))*DU)
 xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
 ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_x$', '$\delta_y$', '$\delta_z$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+title('RHO^{(MCI)} vs RHOref^{(MCI)} - Position')
 
 subplot(2, 1, 2)
 plot((tspan - t0) * TU / Day, (RHO_MCI(:, 4) - RHOref_MCI(:, 4))*DU/TU)
@@ -289,6 +290,7 @@ plot((tspan - t0) * TU / Day, (RHO_MCI(:, 6) - RHOref_MCI(:, 6))*DU/TU)
 xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
 ylabel('$[km]$', 'interpreter', 'latex', 'fontsize', 12)
 legend('$\delta_{v_x}$', '$\delta_{v_y}$', '$\delta_{v_z}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+title('RHO^{(MCI)} vs RHOref^{(MCI)} - Velocities')
 if savechoice
     saveas(gcf, strcat('Output/RHO_MCI vs RHOref_MCI Error.jpg'))
 end
@@ -357,8 +359,8 @@ for i = 1 : M
     apc_LVLHc_i = a34Bc_i + aG_Mc_i;
     
     % Convert Perturbating Accelerations into MCI
-    [R_MCI2LVLHt_i, ~] = get_R_Rdot(Xt_MCI_i, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-    [R_MCI2LVLHc_i, ~] = get_R_Rdot(Xc_MCI_i, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+    [R_MCI2LVLHt_i, ~] = get_rotMCI2LVLH(Xt_MCI_i, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+    [R_MCI2LVLHc_i, ~] = get_rotMCI2LVLH(Xc_MCI_i, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
     
     apc_MCI_i = R_MCI2LVLHc_i'*apc_LVLHc_i;
     
@@ -404,24 +406,4 @@ end
 
 end
 
-% %% Manual Testing
-% 
-% dRHO_LVLH_PPs = get_statePP(tspan, dRHO_LVLH);
-% ddRHO_LVLHr_PPs = fnder(dRHO_LVLH_PPs(1), 1);
-% ddRHO_LVLHt_PPs = fnder(dRHO_LVLH_PPs(2), 1);
-% ddRHO_LVLHh_PPs = fnder(dRHO_LVLH_PPs(3), 1);
-% ddRHO_LVLH_PPs = [ddRHO_LVLHr_PPs; ddRHO_LVLHt_PPs; ddRHO_LVLHh_PPs];
-% 
-% ddRHO_LVLH = zeros(length(tspan), 3);
-% for i = 1 : length(tspan)
-%     ddRHO_LVLH(i, :) = ppsval(ddRHO_LVLH_PPs, tspan(i))';
-% end
-% 
-% figure('name', 'Evolution of RHO State Derivatives from Interpolation')
-% plot((tspan - t0) * TU / Day, dRHO_LVLH(:, 1:3)*DU/TU)
-% hold on
-% plot((tspan - t0) * TU / Day, ddRHO_LVLH(:, 1:3)*DU/TU^2)
-% title('Evolution of RHO State Derivatives from Interpolation')
-% xlabel('$t \ [days]$', 'interpreter', 'latex', 'fontsize', 12)
-% ylabel('$[km/s]\, , \,[km/s^2]$', 'interpreter', 'latex', 'fontsize', 12)
-% legend('$\dot{r}$', '$\dot{\theta}$', '$\dot{h}$', '$\ddot{r}$', '$\ddot{\theta}$', '$\ddot{h}$', 'interpreter', 'latex', 'fontsize', 12, 'location', 'best')
+

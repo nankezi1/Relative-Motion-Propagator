@@ -81,8 +81,8 @@ aG_Mc = MoonHarmPerts(MEEc, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
 apc_LVLHc = a34Bc + aG_Mc;
 
 % Convert Perturbating Accelerations into MCI
-[R_MCI2LVLHt, ~] = get_R_Rdot(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
-[R_MCI2LVLHc, ~] = get_R_Rdot(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+[R_MCI2LVLHt, ~] = get_rotMCI2LVLH(Xt_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
+[R_MCI2LVLHc, ~] = get_rotMCI2LVLH(Xc_MCI, t, EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM);
 
 apc_MCI = R_MCI2LVLHc'*apc_LVLHc;
 
