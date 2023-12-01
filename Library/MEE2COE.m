@@ -32,4 +32,6 @@ for i = 1 : N
 
     COE(i, :) = [a, e, incl, Omega, omega, nu];
 
+    checkCOE(COE(i, :));
+
 end

@@ -1,0 +1,10 @@
+Settings
+_________________________________________________________
+
+Npoints:		1000
+tf:				7.0 days
+RelTol:			0.0000001000000
+AbsTol:			0.0000010000000
+
+
+The Final Distance between Chaser and Target is: 10197.4169 km

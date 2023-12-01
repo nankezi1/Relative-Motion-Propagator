@@ -6,7 +6,7 @@ function dCOE = DynamicalModelCOE(t, COE, EarthPPsMCI, SunPPsMCI, muE, ...
 % 
 % Inputs:
 % t = epoch
-% MEE = Equinoctial Elements State
+% COE = Classical Orbital Elements
 % EarthPPsMCI = pp struct with the interpolation of the Earth State in MCI
 % SunPPsMCI = pp struct with the interpolation of the Sun State in MCI
 % muE = Earth's gravitational parameter in canonical units
@@ -20,7 +20,7 @@ function dCOE = DynamicalModelCOE(t, COE, EarthPPsMCI, SunPPsMCI, muE, ...
 % tf = final time
 % 
 % Outputs:
-% dMEE = derivatives of the MEE State
+% dCOE = derivatives of the COE State
 
 
 % Retrieve Global Variables

@@ -26,9 +26,9 @@ P = plot3(R,T,H,'Color',color, 'Linestyle', linestyle, 'LineWidth', 1.5);
 hold off
 grid on
 axis equal
-xlabel('$r$', 'Interpreter','latex', 'FontSize', 12)
-ylabel('$\theta$', 'Interpreter','latex', 'FontSize', 12)
-zlabel('$h$', 'Interpreter','latex', 'FontSize', 12)
+xlabel('$r \ [km]$', 'Interpreter','latex', 'FontSize', 12)
+ylabel('$\theta \ [km]$', 'Interpreter','latex', 'FontSize', 12)
+zlabel('$h \ [km]$', 'Interpreter','latex', 'FontSize', 12)
 view([30, 30])
 
 

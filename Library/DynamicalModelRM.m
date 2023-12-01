@@ -110,17 +110,17 @@ dY(6) = dY(6) + sqrt(muM/MEEt(1)^3)*eta^2;
 dY(7:9) = rhodot_LVLH;
 dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLH;
 
-% Create log file
-upd = dY./Y;
-tol = 1;
-
-for i = 1 : length(upd)
-    if abs(upd(i)) > tol
-        fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
-        fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
-        break
-    end
-end
+% % Write log file
+% upd = dY./Y;
+% tol = 1;
+% 
+% for i = 1 : length(upd)
+%     if abs(upd(i)) > tol
+%         fprintf(log, 'Update to State Ratio:\n[%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f]\n', upd);
+%         fprintf(log, 'Time Elapsed: %02d days, %02d hrs, %02d mins\n\n', tDAY, tHR, tMIN);
+%         break
+%     end
+% end
 
 end
 

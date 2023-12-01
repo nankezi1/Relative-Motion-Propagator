@@ -5,6 +5,8 @@ function [omegaPPsLVLH, omegadotPPsLVLH] = TargetHandler(Xt_MCI, COEt, MEEt, tsp
 % Recall Global Variables
 global DU TU muM Rm
 
+Day = 86400;
+
 % Initialize Local Variables
 omega_LVLH = zeros(length(tspan), 3);
 
@@ -18,14 +20,14 @@ for i = 1 : length(tspan)
     % Compute Third, Fourth Body and Moon Harmonics Perturbing Accelerations
     a34B = ThirdFourthBody(MEEt(i, :)', ti, EarthPPsMCI, SunPPsMCI, muE, muS);
     aG_M = MoonHarmPerts(MEEt(i, :)', MoonPPsECI, ti, muM, deltaE, psiM, deltaM);
-    ap_LVLH = a34B + aG_M;
+    ap_LVLHt = a34B + aG_M;
 
     % Retrieve COE Values
-    [~, ~, incl, ~, omega, nu] = S2C(COEt);
+    [~, ~, incl, ~, omega, nu] = S2C(COEt(i, :));
     theta_t = omega + nu;
 
     % Compute COE Derivatives
-    COEtdots = get_COEdots(COEt(i, :), Xt_MCI(i, :), ap_LVLH);
+    COEtdots = get_COEdots(COEt(i, :), Xt_MCI(i, :), ap_LVLHt);
     [~, ~, incl_dot, Omega_dot, omega_dot, nu_dot] = S2C(COEtdots);
     theta_t_dot = omega_dot + nu_dot;
 
@@ -39,7 +41,29 @@ for i = 1 : length(tspan)
 
 end
 
-% Perform the Interpolation
+% % Show the Evolution of omegaLVLH
+% % Visualize the Evolution of omega_r_LVLH
+% figure('name', 'Evolution of omega_LVLH_r')
+% plot((tspan - tspan(1))*TU/Day, omega_LVLH(:, 1)/TU)
+% title('Evolution of omega^{(LVLH)}_r')
+% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+% ylabel('$\omega_r^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
+% 
+% % Visualize the Evolution of omega_t_LVLH
+% figure('name', 'Evolution of omega_LVLH_t')
+% plot((tspan - tspan(1))*TU/Day, omega_LVLH(:, 2)/TU)
+% title('Evolution of omega^{(LVLH)}_t')
+% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+% ylabel('$\omega_{\theta}^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
+% 
+% % Visualize the Evolution of omega_h_LVLH
+% figure('name', 'Evolution of omega_LVLH_h')
+% plot((tspan - tspan(1))*TU/Day, omega_LVLH(:, 3)/TU)
+% title('Evolution of omega^{(LVLH)}_h')
+% xlabel('$t \ [days]$', 'Interpreter','latex', 'FontSize', 12)
+% ylabel('$\omega_h^{(LVLH)} \ [rad/s]$', 'Interpreter','latex', 'FontSize', 12)
+
+% Perform the Interpolations
 omegaPPsLVLH = get_statePP(tspan, omega_LVLH);
 
 omegadot_rPPs = fnder(omegaPPsLVLH(1), 1);
