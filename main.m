@@ -118,12 +118,15 @@ RHO_MCI = zeros(length(tspan), 6);
 omega_LVLH = zeros(length(tspan), 3);
 omegadot_LVLH = zeros(length(tspan), 3);
 omega_LVLHnorm = zeros(length(tspan), 1);
+dist = zeros(length(tspan), 1);
 
 pbar = waitbar(0, 'Performing the Final Post-Processing');
 for i = 1 : size(RHO_LVLH, 1)
     
     RHO_MCI(i, :) = rhoLVLH2MCI(RHO_LVLH(i, :)', Xt_MCI(i, :)', tspan(i), EarthPPsMCI, SunPPsMCI, MoonPPsECI, muE, muS, deltaE, psiM, deltaM)';
     Xc_MCI(i, :) = Xt_MCI(i, :) + RHO_MCI(i, :);
+
+    dist(i) = norm(RHO_MCI(i, 1:3) - RHOref_MCI(i, 1:3));
 
     % Compute Angular Velocity of LVLH wrt MCI and its derivative
     omega_LVLH(i, :) = ppsval(omegaPPsLVLH, tspan(i))';
@@ -149,8 +152,9 @@ close all
 clc
 
 % Log the Results
+max_distance = max(dist)*DU;
 final_distance = norm(Xc_MCI(end, 1:3) - Xt_MCI(end, 1:3))*DU;
-create_log(log, options, final_distance);
+create_log(log, options, [max_distance, final_distance]);
 
 % Draw the Target, Chaser and Reference Chaser Trajectories in MCI
 figure('name', 'Trajectory in MCI Space')

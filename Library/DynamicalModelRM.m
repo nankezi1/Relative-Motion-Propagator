@@ -73,7 +73,7 @@ rc_MCI = Xc_MCI(1:3);
 % Target's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
 a34Bt = ThirdFourthBody(MEEt, t, EarthPPsMCI, SunPPsMCI, muE, muS);
 aG_Mt = MoonHarmPerts(MEEt, MoonPPsECI, t, muM, deltaE, psiM, deltaM);
-apt_LVLH = a34Bt + aG_Mt;
+apt_LVLHt = a34Bt + aG_Mt;
 
 % Chaser's Third, Fourth Body and Moon Harmonics Perturbing Accelerations
 a34Bc = ThirdFourthBody(MEEc, t, EarthPPsMCI, SunPPsMCI, muE, muS);
@@ -86,8 +86,18 @@ apc_LVLHc = a34Bc + aG_Mc;
 
 apc_MCI = R_LVLHc2MCI*apc_LVLHc;
 
-% Compute Angular Velocity of LVLH wrt MCI and its derivative
-omega_LVLH = ppsval(omegaPPsLVLH, t);
+% Compute Angular Velocity of LVLH wrt MCI
+[~, ~, incl, ~, omega, nu] = S2C(COEt');
+[~, ~, incl_dot, Omega_dot, omega_dot, nu_dot] = S2C(get_COEdots(COEt', Xt_MCI', apt_LVLHt));
+
+theta_t = omega + nu;
+theta_t_dot = omega_dot + nu_dot;
+
+omega_LVLH = [Omega_dot*sin(incl)*sin(theta_t) + incl_dot*cos(theta_t); ...
+              Omega_dot*sin(incl)*cos(theta_t) - incl_dot*sin(theta_t); ...
+              Omega_dot*cos(incl) + theta_t_dot];
+
+% Compute Angular Acceleration of LVLH wrt MCI
 omegadot_LVLH = ppsval(omegadotPPsLVLH, t);
 
 % Rotate the Necessary Vectors
@@ -105,10 +115,10 @@ q = (dot(rho_LVLH, rho_LVLH) + 2*dot(rho_LVLH, rt_LVLH))/rt^2;
 
 
 % Assign State Derivatives
-dY(1:6) = G*apt_LVLH;
+dY(1:6) = G*apt_LVLHt;
 dY(6) = dY(6) + sqrt(muM/MEEt(1)^3)*eta^2;
 dY(7:9) = rhodot_LVLH;
-dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLH;
+dY(10:12) = -2*cross(omega_LVLH, rhodot_LVLH) - cross(omegadot_LVLH, rho_LVLH) - cross(omega_LVLH, cross(omega_LVLH, rho_LVLH)) + muM/rt^3*((q*(2+q+(1+q)^(1/2)))/((1+q)^(3/2)*((1+q)^(1/2)+1)))*rt_LVLH - muM/rc^3*rho_LVLH + apc_LVLHt - apt_LVLHt;
 
 % % Write log file
 % upd = dY./Y;

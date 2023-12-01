@@ -6,5 +6,6 @@ tf:				7.0 days
 RelTol:			0.0000001000000
 AbsTol:			0.0000010000000
 
+The Max Distance between Chaser and Reference Chaser is: 4.5489 km
 
-The Final Distance between Chaser and Target is: 10197.4169 km
+The Final Distance between Chaser and Target is: 10201.0887 km
