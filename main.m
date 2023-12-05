@@ -11,7 +11,7 @@ addpath('Data/Materials/')
 
 % Introduce Options Structure
 options = struct('name', "Progator Options");
-options.saveplots = true;
+options.saveplots = false;
 
 
 %% Hyperparameters and Settings
@@ -42,8 +42,8 @@ RHO0_LVLH = [5e-2, 5e-2, 5e-2, 1e-3, 1e-3, 1e-3]';      % km, km/s
 RHO0_LVLH = [RHO0_LVLH(1:3)/DU; RHO0_LVLH(4:6)/DU*TU];
 
 % Define the n° of points for the Interpolation
-options.Npoints = 1000;
-options.Nperiods = 1.1;         % to set the final time
+options.Npoints = 100000;
+options.Nperiods = 1.1/3;         % to set the final time
 
 % Interpolate the Ephemeris and Retrieve Target's Initial State
 [X0t_MCI, COE0t, MEE0t, EarthPPsMCI, DSGPPsMCI, SunPPsMCI, MoonPPsECI, time, t0, tf, options.Npoints] = ...
